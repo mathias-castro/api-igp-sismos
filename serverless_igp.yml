@@ -1,0 +1,99 @@
+org: mcastroa
+service: igp-sismos-api
+
+provider:
+  name: aws
+  runtime: python3.9
+  memorySize: 1024
+  timeout: 60
+  region: us-east-1
+  iam:
+    role: arn:aws:iam::016748221635:role/LabRole
+  environment:
+    DYNAMODB_TABLE: SismosIGP
+
+functions:
+  sismos:
+    handler: igp_sismos_api.lambda_handler
+    description: "API único GET para scraping y almacenamiento de sismos del IGP"
+    events:
+      # Único endpoint GET que hace todo
+      - http:
+          path: /
+          method: get
+          cors: true
+      - http:
+          path: /sismos
+          method: get
+          cors: true
+      # Evento programado cada 2 horas
+      - schedule:
+          rate: rate(120 minutes)
+          description: "Scraping automático cada 2 horas"
+          enabled: true
+
+resources:
+  Resources:
+    # Tabla DynamoDB
+    SismosIGPTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: SismosIGP
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: scraped_at
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: TimestampIndex
+            KeySchema:
+              - AttributeName: scraped_at
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5 
+              WriteCapacityUnits: 5
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    # CORS para API Gateway
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        RestApiId:
+          Ref: RestApiApigEvent
+        ResponseType: DEFAULT_4XX
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse  
+      Properties:
+        RestApiId:
+          Ref: RestApiApigEvent
+        ResponseType: DEFAULT_5XX
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    zip: true
+    slim: true
+    strip: false
