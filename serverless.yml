@@ -3,7 +3,7 @@ service: igp-sismos-api
 
 provider:
   name: aws
-  runtime: python3.12.3
+  runtime: python3.12  # ← CAMBIO: de python3.13 a python3.12
   memorySize: 1024
   timeout: 60
   region: us-east-1
@@ -88,8 +88,8 @@ resources:
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
 
-# ❌ REMOVIDO: plugins (ya no es necesario)
-# ❌ REMOVIDO: custom.pythonRequirements (se maneja automáticamente)
+# ❌ REMOVIDO: plugins (ya no es necesario en versiones nuevas)
+# ❌ REMOVIDO: custom.pythonRequirements con configuraciones específicas
 
 custom:
-  pythonRequirements: {}  # Solo esto es necesario para activar el soporte automático
+  pythonRequirements: {}  # Solo esto es necesario
