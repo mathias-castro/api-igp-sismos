@@ -5,7 +5,7 @@ provider:
   name: aws
   runtime: python3.12
   memorySize: 1024
-  timeout: 29
+  timeout: 60
   region: us-east-1
   iam:
     role: arn:aws:iam::016748221635:role/LabRole
@@ -16,6 +16,9 @@ functions:
   sismos:
     handler: igp_sismos_api.lambda_handler
     description: "API único GET para scraping y almacenamiento de sismos del IGP"
+    package:
+      include:
+        - igp_sismos_api.py
     events:
       - http:
           path: /
@@ -26,7 +29,7 @@ functions:
           method: get
           cors: true
       - schedule:
-          rate: rate(120 minutes)
+          rate: rate(120 minutes)   # ejecuta cada 2 horas
           description: "Scraping automático cada 2 horas"
           enabled: true
 
@@ -52,7 +55,7 @@ resources:
             Projection:
               ProjectionType: ALL
             ProvisionedThroughput:
-              ReadCapacityUnits: 5 
+              ReadCapacityUnits: 5
               WriteCapacityUnits: 5
         BillingMode: PROVISIONED
         ProvisionedThroughput:
@@ -61,6 +64,28 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ResponseType: DEFAULT_4XX
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ResponseType: DEFAULT_5XX
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
 
 custom:
   pythonRequirements: {}
