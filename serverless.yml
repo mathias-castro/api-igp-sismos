@@ -88,12 +88,8 @@ resources:
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
 
-plugins:
-  - serverless-python-requirements
+# ❌ REMOVIDO: plugins (ya no es necesario)
+# ❌ REMOVIDO: custom.pythonRequirements (se maneja automáticamente)
 
 custom:
-  pythonRequirements:
-    dockerizePip: non-linux
-    zip: true
-    slim: true
-    strip: false
+  pythonRequirements: {}  # Solo esto es necesario para activar el soporte automático
